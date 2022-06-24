@@ -4,7 +4,16 @@ extern crate ip2region;
 use ip2region::*;
 use std::net::Ipv4Addr;
 use ipnet::Ipv4Net;
+use serde::{ Serialize};
 
+#[allow(non_snake_case)]
+#[derive(Serialize )]
+pub struct RegionInfo{
+    pub country: &'static str,
+    pub province: &'static str,
+    pub city: &'static str,
+    pub ISP: &'static str,
+}
 
 #[async_std::main]
 async fn main() -> tide::Result<()> {
@@ -39,9 +48,15 @@ async fn ip2region(req: Request<()>) -> tide::Result{
     let res = memory_search(ip);
     match res {
         Ok(ip_info) =>  {
-            let str = format!("{:?}",ip_info);
-            log::info!("ip {} region:{}",ip,str);
-            Ok(str.into())
+            let region_info = RegionInfo{
+                country : ip_info.country,
+                province : ip_info.province,
+                city: ip_info.city,
+                ISP : ip_info.ISP, 
+            };
+            let json = serde_json::to_string(&region_info)?;
+            log::info!("ip {} region:{}",ip,json);
+            Ok(json.into())
         },
         _ => {
             log::warn!("ip2region failed {}",ip);
